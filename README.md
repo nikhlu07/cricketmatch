@@ -19,6 +19,7 @@ Use a Solidity development environment or an online IDE such as Remix.
 Create a new Solidity file and save it with a .sol extension (e.g. cricket. sol).
 
 Copy and paste the following code into the file:
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
