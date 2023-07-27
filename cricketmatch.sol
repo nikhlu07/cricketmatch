@@ -30,6 +30,7 @@ contract CricketMatch {
     }
 
     function submitScore(uint256 score) public matchInProgress {
+        require(!matchEnded, "Cannot submit scores after the match has ended.");
         require(score >= 0 && score <= 100, "Invalid score. It should be between 0 and 100.");
         require(playerScores[msg.sender] + score <= 100, "Player cannot exceed 100 runs.");
         playerScores[msg.sender] += score;
@@ -37,16 +38,14 @@ contract CricketMatch {
     }
 
     function endMatch() public onlyOwner matchInProgress {
-        assert(address(this).balance >= totalTeamScore, "Insufficient balance to distribute rewards.");
+        require(address(this).balance >= totalTeamScore, "Insufficient contract balance to distribute rewards.");
         matchEnded = true;
         payable(owner).transfer(totalTeamScore);
     }
 
     function resetMatch() public onlyOwner {
-        if (!matchEnded) {
-            revert("Cannot reset the match while it's in progress.");
-        }
-
+        require(matchEnded, "Cannot reset the match while it's in progress.");
+        
         // Reset the match scores
         for (uint256 i = 0; i < players.length; i++) {
             playerScores[players[i]] = 0;
