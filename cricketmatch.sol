@@ -7,10 +7,12 @@ contract CricketMatch {
     uint256 public totalTeamScore;
     bool public matchEnded;
     address[] public players;
+    uint256 public contractBalance; // Track the contract's balance
 
     constructor() {
         owner = msg.sender;
         matchEnded = false;
+        contractBalance = 0; 
     }
 
     modifier onlyOwner() {
@@ -26,6 +28,7 @@ contract CricketMatch {
     function registerPlayer() public {
         require(!matchEnded, "Cannot register players after the match has ended.");
         require(playerScores[msg.sender] == 0, "You are already registered as a player.");
+        require(players.length < 11, "The maximum number of players (11) has been reached.");
         players.push(msg.sender);
     }
 
@@ -37,20 +40,38 @@ contract CricketMatch {
         totalTeamScore += score;
     }
 
-    function endMatch() public onlyOwner matchInProgress {
-        require(address(this).balance >= totalTeamScore, "Insufficient contract balance to distribute rewards.");
-        matchEnded = true;
-        payable(owner).transfer(totalTeamScore);
-    }
+     function endMatch() public onlyOwner matchInProgress {
+      assert(contractBalance >= totalTeamScore);
+      matchEnded = true;
+      payable(owner).transfer(totalTeamScore);
+  }
+
 
     function resetMatch() public onlyOwner {
         require(matchEnded, "Cannot reset the match while it's in progress.");
-        
-        // Reset the match scores
+
         for (uint256 i = 0; i < players.length; i++) {
             playerScores[players[i]] = 0;
         }
         totalTeamScore = 0;
         matchEnded = false;
+    }
+
+    function withdrawFunds() public {
+        require(matchEnded, "Cannot withdraw funds until the match has ended.");
+        require(playerScores[msg.sender] > 0, "You are not a registered player or your score is zero.");
+        uint256 playerScore = playerScores[msg.sender];
+        playerScores[msg.sender] = 0;
+        (bool success, ) = msg.sender.call{value: playerScore}("");
+        require(success, "Failed to withdraw funds.");
+    }
+
+    function cancelMatch() public view onlyOwner matchInProgress {
+        revert("The match has been canceled by the owner.");
+    }
+
+    // Function to deposit funds to the contract
+    function depositFunds() public payable {
+        contractBalance += msg.value;
     }
 }
